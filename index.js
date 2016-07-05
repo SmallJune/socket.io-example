@@ -14,6 +14,15 @@ server.listen(port, function () {
 // Routing
 app.use(express.static(__dirname + '/public'));
 
+app.get('/send_message', function (req, res) {
+    var username = req.query.username;
+    var message = req.query.message;
+    // 给广播发送
+    io.of('/flask_socket').emit('my response', {data: message});
+  //给某个房间发
+	io.of('/flask_socket').in(username).emit('my response', {data: message});
+	res.json({ status: 200, message: 'success'})
+});
 
 
 io.of('/flask_socket').on('connection', function (socket) {
@@ -33,13 +42,15 @@ io.of('/flask_socket').on('connection', function (socket) {
 
   socket.on('my broadcast event', function (data) {
     // 发送个人
-    socket.emit('my response', {
-      data: data.data
-    });
+    // socket.emit('my response', {
+    //   data: data.data
+    // });
     // 发送全部
-    socket.broadcast.emit('my response', {
-      data: data.data
-    })
+    console.log(data);
+    io.of('/flask_socket').emit('my response', {data: data.data});
+    // socket.broadcast.emit('my response', {
+    //   data: data.data
+    // })
     
   });
 
