@@ -6,6 +6,7 @@ var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 var port = process.env.PORT || 3000;
 io.use(cookieParser);
+users = [];
 
 server.listen(port, function () {
   console.log('Server listening at port %d', port);
@@ -24,12 +25,20 @@ app.get('/send_message', function (req, res) {
 	res.json({ status: 200, message: 'success'})
 });
 
+app.get('/get_users', function (req, res) {
+  res.send(users)
 
+});
 io.of('/flask_socket').on('connection', function (socket) {
-  console.log(socket.request.headers.cookie.username);
   var username = socket.request.headers.cookie.username;
   var role_id = socket.request.headers.cookie.role_id;
   socket.join(username);
+
+  if(users.indexOf(username) == -1) {
+            socket.user = username;
+            users.push(socket.user);
+        }
+
   if (role_id == '2' || role_id == '1'){
     socket.join('operator');
   }
@@ -84,6 +93,8 @@ io.of('/flask_socket').on('connection', function (socket) {
   });
   
   socket.on('disconnect request', function (data) {
+    if(!socket.user) return;
+        users.splice(users.indexOf(socket), 1);
     socket.emit('my response', {
       data: 'Disconnected!'
     });
